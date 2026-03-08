@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#c9a84c">
+<title>FrançaisStory — Hikayeyle Öğren</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161921;
+    --surface2: #1e2230;
+    --border: #2a2f3e;
+    --french-blue: #002395;
+    --french-red: #ED2939;
+    --gold: #c9a84c;
+    --gold-light: #e8c97a;
+    --text: #e8e6df;
+    --text-muted: #8a8a9a;
+    --text-dim: #555568;
+    --highlight-word: rgba(201,168,76,0.25);
+    --highlight-sentence: rgba(0,35,149,0.2);
+    --popup-bg: #1a1d2a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+  body::before { content:''; position:fixed; inset:0; background: radial-gradient(ellipse at 20% 20%, rgba(0,35,149,0.08) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(237,41,57,0.05) 0%, transparent 50%); pointer-events:none; z-index:0; }
+
+  .topbar { position:sticky; top:0; z-index:100; background:rgba(13,15,20,0.95); backdrop-filter:blur(16px); border-bottom:1px solid var(--border); padding:12px 16px; display:flex; align-items:center; gap:12px; }
+  .flag { display:flex; gap:2px; align-items:center; }
+  .flag span { width:6px; height:20px; border-radius:1px; }
+  .flag .f1 { background:var(--french-blue); }
+  .flag .f2 { background:#fff; }
+  .flag .f3 { background:var(--french-red); }
+  .app-title { font-family:'Playfair Display',serif; font-size:18px; color:var(--gold); letter-spacing:0.5px; flex:1; }
+  .tab-btn { padding:6px 14px; border-radius:20px; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-family:'DM Sans',sans-serif; font-size:13px; cursor:pointer; transition:all 0.2s; }
+  .tab-btn.active { background:var(--gold); color:#0d0f14; border-color:var(--gold); font-weight:600; }
+
+  .screen { display:none; padding:16px; position:relative; z-index:1; }
+  .screen.active { display:block; }
+
+  .level-intro { text-align:center; padding:24px 0 20px; }
+  .level-intro h1 { font-family:'Playfair Display',serif; font-size:28px; color:var(--gold); margin-bottom:8px; }
+  .level-intro p { color:var(--text-muted); font-size:14px; line-height:1.6; }
+
+  .levels-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:20px; }
+  .level-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:18px 14px; cursor:pointer; transition:all 0.25s; position:relative; overflow:hidden; }
+  .level-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:16px 16px 0 0; }
+  .level-card.a1::before { background:#4CAF50; }
+  .level-card.a2::before { background:#8BC34A; }
+  .level-card.b1::before { background:#FFC107; }
+  .level-card.b2::before { background:#FF9800; }
+  .level-card.c1::before { background:#F44336; }
+  .level-card.c2::before { background:#9C27B0; }
+  .level-card:active { transform:scale(0.97); }
+  .level-badge { font-family:'Playfair Display',serif; font-size:26px; font-weight:700; color:var(--text); margin-bottom:4px; }
+  .level-name { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
+  .level-desc { font-size:12px; color:var(--text-dim); line-height:1.5; }
+  .level-progress { margin-top:12px; height:3px; background:var(--border); border-radius:2px; overflow:hidden; }
+  .level-progress-fill { height:100%; background:var(--gold); border-radius:2px; width:0%; transition:width 0.5s; }
+
+  .back-btn { display:flex; align-items:center; gap:8px; color:var(--text-muted); font-size:14px; cursor:pointer; margin-bottom:20px; padding:8px 0; }
+  .section-title { font-family:'Playfair Display',serif; font-size:22px; color:var(--text); margin-bottom:4px; }
+  .section-sub { font-size:13px; color:var(--text-muted); margin-bottom:20px; }
+
+  .chapters-list { display:flex; flex-direction:column; gap:10px; }
+  .chapter-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; cursor:pointer; display:flex; align-items:center; gap:14px; transition:all 0.2s; }
+  .chapter-card:active { transform:scale(0.98); background:var(--surface2); }
+  .chapter-num { width:40px; height:40px; border-radius:12px; background:var(--surface2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-family:'Playfair Display',serif; font-size:16px; color:var(--gold); flex-shrink:0; }
+  .chapter-info { flex:1; }
+  .chapter-title { font-size:15px; font-weight:500; color:var(--text); margin-bottom:3px; }
+  .chapter-meta { font-size:12px; color:var(--text-muted); }
+  .chapter-arrow { color:var(--text-dim); font-size:18px; }
+
+  .story-header { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:16px; margin-bottom:16px; }
+  .story-level-tag { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; letter-spacing:1px; margin-bottom:8px; }
+  .story-title { font-family:'Playfair Display',serif; font-size:22px; color:var(--text); margin-bottom:6px; }
+  .story-hint { font-size:12px; color:var(--text-muted); }
+
+  .story-container { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px 18px; margin-bottom:16px; }
+  .story-text { font-family:'Playfair Display',serif; font-size:17px; line-height:2.1; color:var(--text); }
+
+  .story-word { cursor:pointer; border-radius:4px; padding:1px 3px; transition:background 0.15s; display:inline; border-bottom:1px dotted rgba(201,168,76,0.4); }
+  .story-word:active, .story-word.active { background:var(--highlight-word); }
+  .story-sentence { cursor:pointer; border-radius:6px; padding:2px 0; display:inline; transition:background 0.15s; }
+  .story-sentence:active, .story-sentence.active { background:var(--highlight-sentence); }
+
+  .popup { position:fixed; bottom:-220px; left:12px; right:12px; background:var(--popup-bg); border:1px solid var(--border); border-radius:20px; padding:18px 20px; z-index:200; transition:bottom 0.3s cubic-bezier(0.34,1.56,0.64,1); box-shadow:0 -8px 40px rgba(0,0,0,0.6); }
+  .popup.visible { bottom:16px; }
+  .popup-type { font-size:10px; text-transform:uppercase; letter-spacing:1.5px; color:var(--text-dim); margin-bottom:6px; }
+  .popup-original { font-family:'Playfair Display',serif; font-size:19px; color:var(--text); margin-bottom:5px; }
+  .popup-translation { font-size:15px; color:var(--gold-light); margin-bottom:14px; line-height:1.5; }
+  .popup-actions { display:flex; gap:10px; }
+  .popup-save-btn { flex:1; padding:10px; background:var(--gold); color:#0d0f14; border:none; border-radius:12px; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+  .popup-save-btn.saved { background:#1e3a1e; color:#4CAF50; border:1px solid #4CAF50; }
+  .popup-close-btn { width:44px; height:44px; background:var(--surface2); border:1px solid var(--border); border-radius:12px; color:var(--text-muted); font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+
+  .cards-empty { text-align:center; padding:60px 20px; color:var(--text-muted); }
+  .cards-empty-icon { font-size:48px; margin-bottom:16px; }
+  .cards-empty h3 { font-size:18px; color:var(--text); margin-bottom:8px; }
+  .cards-empty p { font-size:14px; line-height:1.6; }
+  .cards-grid { display:flex; flex-direction:column; gap:10px; margin-top:8px; }
+  .vocab-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 16px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+  .vocab-fr { font-family:'Playfair Display',serif; font-size:17px; color:var(--text); margin-bottom:3px; }
+  .vocab-tr { font-size:13px; color:var(--gold-light); }
+  .vocab-level-tag { font-size:10px; padding:3px 8px; border-radius:10px; background:var(--surface2); color:var(--text-dim); white-space:nowrap; flex-shrink:0; }
+  .vocab-delete { background:none; border:none; color:var(--text-dim); font-size:18px; cursor:pointer; padding:4px 8px; flex-shrink:0; }
+  .stats-bar { display:flex; gap:10px; margin-bottom:16px; }
+  .stat-chip { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px 14px; flex:1; text-align:center; }
+  .stat-num { font-family:'Playfair Display',serif; font-size:22px; color:var(--gold); }
+  .stat-label { font-size:11px; color:var(--text-muted); margin-top:2px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="flag"><span class="f1"></span><span class="f2"></span><span class="f3"></span></div>
+  <div class="app-title">FrançaisStory</div>
+  <button class="tab-btn active" onclick="showTab('learn',this)">Öğren</button>
+  <button class="tab-btn" onclick="showTab('cards',this)">Kartlar</button>
+</div>
+
+<div id="screen-levels" class="screen active">
+  <div class="level-intro">
+    <h1>Seviyeni Seç</h1>
+    <p>Her seviyede hikayeler seni bekliyor.<br>Kelimelere dokun, Türkçesini gör, kartına ekle.</p>
+  </div>
+  <div class="levels-grid">
+    <div class="level-card a1" onclick="selectLevel('A1')"><div class="level-badge">A1</div><div class="level-name">Başlangıç</div><div class="level-desc">İlk kelimeler, basit cümleler</div><div class="level-progress"><div class="level-progress-fill" id="prog-A1"></div></div></div>
+    <div class="level-card a2" onclick="selectLevel('A2')"><div class="level-badge">A2</div><div class="level-name">Temel</div><div class="level-desc">Kısa diyaloglar, günlük hayat</div><div class="level-progress"><div class="level-progress-fill" id="prog-A2"></div></div></div>
+    <div class="level-card b1" onclick="selectLevel('B1')"><div class="level-badge">B1</div><div class="level-name">Orta</div><div class="level-desc">Güncel konular, fikirler</div><div class="level-progress"><div class="level-progress-fill" id="prog-B1"></div></div></div>
+    <div class="level-card b2" onclick="selectLevel('B2')"><div class="level-badge">B2</div><div class="level-name">Üst Orta</div><div class="level-desc">Tartışmalar, haberler</div><div class="level-progress"><div class="level-progress-fill" id="prog-B2"></div></div></div>
+    <div class="level-card c1" onclick="selectLevel('C1')"><div class="level-badge">C1</div><div class="level-name">İleri</div><div class="level-desc">Akademik, karmaşık yapılar</div><div class="level-progress"><div class="level-progress-fill" id="prog-C1"></div></div></div>
+    <div class="level-card c2" onclick="selectLevel('C2')"><div class="level-badge">C2</div><div class="level-name">Ustalık</div><div class="level-desc">Edebi, anadil seviyesi</div><div class="level-progress"><div class="level-progress-fill" id="prog-C2"></div></div></div>
+  </div>
+</div>
+
+<div id="screen-chapters" class="screen">
+  <div class="back-btn" onclick="showScreen('levels')">← Geri</div>
+  <div class="section-title" id="chapters-title">Bölümler</div>
+  <div class="section-sub">Bir bölüm seç ve okumaya başla</div>
+  <div class="chapters-list" id="chapters-list"></div>
+</div>
+
+<div id="screen-story" class="screen">
+  <div class="back-btn" onclick="showScreen('chapters');closePopup()">← Bölümlere Dön</div>
+  <div class="story-header">
+    <div class="story-level-tag" id="story-level-tag">A1</div>
+    <div class="story-title" id="story-title"></div>
+    <div class="story-hint">👆 Kelimeye dokun → Türkçesi &nbsp;|&nbsp; 📌 Cümleye bas → Çeviri</div>
+  </div>
+  <div class="story-container"><div class="story-text" id="story-text"></div></div>
+</div>
+
+<div id="screen-cards" class="screen">
+  <div class="section-title" style="margin-bottom:4px">Kelime Kartlarım</div>
+  <div class="section-sub">Hikayelerden kaydettiğin kelimeler</div>
+  <div class="stats-bar">
+    <div class="stat-chip"><div class="stat-num" id="total-cards">0</div><div class="stat-label">Toplam</div></div>
+    <div class="stat-chip"><div class="stat-num" id="today-cards">0</div><div class="stat-label">Bugün</div></div>
+  </div>
+  <div id="cards-content"></div>
+</div>
+
+<div class="popup" id="popup">
+  <div class="popup-type" id="popup-type">KELİME</div>
+  <div class="popup-original" id="popup-original">—</div>
+  <div class="popup-translation" id="popup-translation">—</div>
+  <div class="popup-actions">
+    <button class="popup-save-btn" id="popup-save-btn" onclick="saveWord()">+ Karta Ekle</button>
+    <button class="popup-close-btn" onclick="closePopup()">✕</button>
+  </div>
+</div>
+
+<script>
+// ========== STORIES DATA ==========
+const STORIES = {
+  A1: [
+    {
+      title: "Bonjour! Tanışma",
+      sentences: [
+        { fr: "Je m'appelle Marie.", tr: "Benim adım Marie.", words: [{fr:"appelle",tr:"adım (isim)"},{fr:"Marie",tr:"Marie (isim)"}] },
+        { fr: "J'ai vingt ans.", tr: "Yirmi yaşındayım.", words: [{fr:"vingt",tr:"yirmi"},{fr:"ans",tr:"yaş / yıllar"}] },
+        { fr: "Je suis française.", tr: "Ben Fransızım.", words: [{fr:"suis",tr:"(ben) im"},{fr:"française",tr:"Fransız (kadın)"}] },
+        { fr: "J'habite à Paris.", tr: "Paris'te yaşıyorum.", words: [{fr:"habite",tr:"yaşıyorum"},{fr:"Paris",tr:"Paris"}] },
+        { fr: "Bonjour, comment vous appelez-vous?", tr: "Merhaba, adınız ne?", words: [{fr:"Bonjour",tr:"Merhaba"},{fr:"comment",tr:"nasıl"},{fr:"appelez-vous",tr:"adınız nedir"}] },
+        { fr: "Je m'appelle Pierre.", tr: "Benim adım Pierre.", words: [{fr:"Pierre",tr:"Pierre (isim)"}] },
+        { fr: "Enchanté!", tr: "Tanıştığıma memnun oldum!", words: [{fr:"Enchanté",tr:"Memnun oldum"}] },
+        { fr: "Vous êtes étudiant?", tr: "Öğrenci misiniz?", words: [{fr:"êtes",tr:"(siz) siniz"},{fr:"étudiant",tr:"öğrenci"}] },
+        { fr: "Non, je suis professeur.", tr: "Hayır, ben öğretmenim.", words: [{fr:"Non",tr:"Hayır"},{fr:"professeur",tr:"öğretmen"}] },
+        { fr: "Au revoir!", tr: "Güle güle!", words: [{fr:"Au revoir",tr:"Güle güle"}] }
+      ]
+    },
+    {
+      title: "Café'de Sabah",
+      sentences: [
+        { fr: "Le matin, je vais au café.", tr: "Sabah kafeye gidiyorum.", words: [{fr:"matin",tr:"sabah"},{fr:"vais",tr:"gidiyorum"},{fr:"café",tr:"kafe"}] },
+        { fr: "Je commande un café au lait.", tr: "Sütlü kahve sipariş ediyorum.", words: [{fr:"commande",tr:"sipariş ediyorum"},{fr:"lait",tr:"süt"}] },
+        { fr: "Le café est chaud.", tr: "Kahve sıcak.", words: [{fr:"chaud",tr:"sıcak"}] },
+        { fr: "Je mange un croissant.", tr: "Bir kruvasan yiyorum.", words: [{fr:"mange",tr:"yiyorum"},{fr:"croissant",tr:"kruvasan"}] },
+        { fr: "C'est délicieux!", tr: "Çok lezzetli!", words: [{fr:"délicieux",tr:"lezzetli"}] },
+        { fr: "Le garçon est sympa.", tr: "Garson sempatik.", words: [{fr:"garçon",tr:"garson / oğlan"},{fr:"sympa",tr:"sempatik"}] },
+        { fr: "Il apporte l'addition.", tr: "Hesabı getiriyor.", words: [{fr:"apporte",tr:"getiriyor"},{fr:"addition",tr:"hesap"}] },
+        { fr: "C'est combien?", tr: "Ne kadar?", words: [{fr:"combien",tr:"ne kadar / kaç"}] },
+        { fr: "C'est trois euros.", tr: "Üç euro.", words: [{fr:"trois",tr:"üç"},{fr:"euros",tr:"euro"}] },
+        { fr: "Merci, à bientôt!", tr: "Teşekkürler, yakında görüşürüz!", words: [{fr:"Merci",tr:"Teşekkürler"},{fr:"bientôt",tr:"yakında"}] }
+      ]
+    },
+    {
+      title: "Benim Ailem",
+      sentences: [
+        { fr: "J'ai une grande famille.", tr: "Büyük bir ailem var.", words: [{fr:"grande",tr:"büyük"},{fr:"famille",tr:"aile"}] },
+        { fr: "Mon père s'appelle Jean.", tr: "Babamın adı Jean.", words: [{fr:"père",tr:"baba"}] },
+        { fr: "Ma mère s'appelle Sophie.", tr: "Annemin adı Sophie.", words: [{fr:"mère",tr:"anne"}] },
+        { fr: "J'ai un frère et une sœur.", tr: "Bir erkek ve bir kız kardeşim var.", words: [{fr:"frère",tr:"erkek kardeş"},{fr:"sœur",tr:"kız kardeş"}] },
+        { fr: "Mon frère a quinze ans.", tr: "Erkek kardeşim on beş yaşında.", words: [{fr:"quinze",tr:"on beş"}] },
+        { fr: "Ma sœur est petite.", tr: "Kız kardeşim küçük.", words: [{fr:"petite",tr:"küçük (kadın)"}] },
+        { fr: "Nous habitons ensemble.", tr: "Birlikte yaşıyoruz.", words: [{fr:"habitons",tr:"yaşıyoruz"},{fr:"ensemble",tr:"birlikte"}] },
+        { fr: "Le dimanche, nous mangeons ensemble.", tr: "Pazar günü birlikte yiyoruz.", words: [{fr:"dimanche",tr:"pazar"}] },
+        { fr: "Ma famille est heureuse.", tr: "Ailem mutlu.", words: [{fr:"heureuse",tr:"mutlu (kadın)"}] },
+        { fr: "J'aime ma famille.", tr: "Ailemi seviyorum.", words: [{fr:"aime",tr:"seviyorum"}] }
+      ]
+    },
+    {
+      title: "Renkler ve Sayılar",
+      sentences: [
+        { fr: "Le ciel est bleu.", tr: "Gökyüzü mavi.", words: [{fr:"ciel",tr:"gökyüzü"},{fr:"bleu",tr:"mavi"}] },
+        { fr: "La rose est rouge.", tr: "Gül kırmızı.", words: [{fr:"rose",tr:"gül"},{fr:"rouge",tr:"kırmızı"}] },
+        { fr: "L'herbe est verte.", tr: "Çimen yeşil.", words: [{fr:"herbe",tr:"çimen / ot"},{fr:"verte",tr:"yeşil (kadın)"}] },
+        { fr: "Le soleil est jaune.", tr: "Güneş sarı.", words: [{fr:"soleil",tr:"güneş"},{fr:"jaune",tr:"sarı"}] },
+        { fr: "J'ai dix doigts.", tr: "On parmağım var.", words: [{fr:"dix",tr:"on"},{fr:"doigts",tr:"parmaklar"}] },
+        { fr: "Il y a cinq pommes.", tr: "Beş elma var.", words: [{fr:"cinq",tr:"beş"},{fr:"pommes",tr:"elmalar"}] },
+        { fr: "Je compte jusqu'à cent.", tr: "Yüze kadar sayıyorum.", words: [{fr:"compte",tr:"sayıyorum"},{fr:"cent",tr:"yüz"}] },
+        { fr: "Mon chat est noir et blanc.", tr: "Kedim siyah ve beyaz.", words: [{fr:"chat",tr:"kedi"},{fr:"noir",tr:"siyah"},{fr:"blanc",tr:"beyaz"}] },
+        { fr: "J'aime la couleur orange.", tr: "Turuncu rengi seviyorum.", words: [{fr:"couleur",tr:"renk"},{fr:"orange",tr:"turuncu"}] },
+        { fr: "Il y a sept jours dans une semaine.", tr: "Bir haftada yedi gün var.", words: [{fr:"sept",tr:"yedi"},{fr:"jours",tr:"günler"},{fr:"semaine",tr:"hafta"}] }
+      ]
+    },
+    {
+      title: "Evde Bir Gün",
+      sentences: [
+        { fr: "Je me lève à sept heures.", tr: "Yedide kalkıyorum.", words: [{fr:"lève",tr:"kalkıyorum"},{fr:"heures",tr:"saat / saatler"}] },
+        { fr: "Je prends une douche.", tr: "Duş alıyorum.", words: [{fr:"prends",tr:"alıyorum"},{fr:"douche",tr:"duş"}] },
+        { fr: "Je mange du pain avec du beurre.", tr: "Tereyağlı ekmek yiyorum.", words: [{fr:"pain",tr:"ekmek"},{fr:"beurre",tr:"tereyağı"}] },
+        { fr: "Ma maison est grande.", tr: "Evim büyük.", words: [{fr:"maison",tr:"ev"}] },
+        { fr: "Il y a trois chambres.", tr: "Üç yatak odası var.", words: [{fr:"chambres",tr:"yatak odaları"}] },
+        { fr: "Je lis un livre dans le salon.", tr: "Oturma odasında kitap okuyorum.", words: [{fr:"lis",tr:"okuyorum"},{fr:"livre",tr:"kitap"},{fr:"salon",tr:"oturma odası"}] },
+        { fr: "Le soir, je regarde la télévision.", tr: "Akşam televizyon izliyorum.", words: [{fr:"soir",tr:"akşam"},{fr:"regarde",tr:"izliyorum"},{fr:"télévision",tr:"televizyon"}] },
+        { fr: "Je fais la cuisine.", tr: "Yemek yapıyorum.", words: [{fr:"fais",tr:"yapıyorum"},{fr:"cuisine",tr:"mutfak / yemek pişirme"}] },
+        { fr: "Je me couche à dix heures.", tr: "Onda yatıyorum.", words: [{fr:"couche",tr:"yatıyorum"}] },
+        { fr: "Bonne nuit!", tr: "İyi geceler!", words: [{fr:"Bonne nuit",tr:"İyi geceler"}] }
+      ]
+    },
+    {
+      title: "Hayvanlar",
+      sentences: [
+        { fr: "J'aime les animaux.", tr: "Hayvanları seviyorum.", words: [{fr:"animaux",tr:"hayvanlar"}] },
+        { fr: "Mon chien s'appelle Rex.", tr: "Köpeğimin adı Rex.", words: [{fr:"chien",tr:"köpek"}] },
+        { fr: "Le chien est fidèle.", tr: "Köpek sadık.", words: [{fr:"fidèle",tr:"sadık"}] },
+        { fr: "Mon chat dort sur le canapé.", tr: "Kedim kanepede uyuyor.", words: [{fr:"dort",tr:"uyuyor"},{fr:"canapé",tr:"kanepe"}] },
+        { fr: "Les oiseaux chantent.", tr: "Kuşlar şarkı söylüyor.", words: [{fr:"oiseaux",tr:"kuşlar"},{fr:"chantent",tr:"şarkı söylüyorlar"}] },
+        { fr: "Le lapin mange des carottes.", tr: "Tavşan havuç yiyor.", words: [{fr:"lapin",tr:"tavşan"},{fr:"carottes",tr:"havuçlar"}] },
+        { fr: "Le lion est fort.", tr: "Aslan güçlü.", words: [{fr:"lion",tr:"aslan"},{fr:"fort",tr:"güçlü"}] },
+        { fr: "Les poissons nagent dans l'eau.", tr: "Balıklar suda yüzüyor.", words: [{fr:"poissons",tr:"balıklar"},{fr:"nagent",tr:"yüzüyorlar"},{fr:"eau",tr:"su"}] },
+        { fr: "Le cheval court vite.", tr: "At hızlı koşuyor.", words: [{fr:"cheval",tr:"at"},{fr:"court",tr:"koşuyor"},{fr:"vite",tr:"hızlı"}] },
+        { fr: "J'aime aller au zoo.", tr: "Hayvanat bahçesine gitmeyi seviyorum.", words: [{fr:"zoo",tr:"hayvanat bahçesi"}] }
+      ]
+    },
+    {
+      title: "Vücudum",
+      sentences: [
+        { fr: "J'ai deux yeux.", tr: "İki gözüm var.", words: [{fr:"yeux",tr:"gözler"}] },
+        { fr: "Mon nez est petit.", tr: "Burnum küçük.", words: [{fr:"nez",tr:"burun"}] },
+        { fr: "J'ai les cheveux noirs.", tr: "Siyah saçlarım var.", words: [{fr:"cheveux",tr:"saçlar"}] },
+        { fr: "Ma bouche est grande.", tr: "Ağzım büyük.", words: [{fr:"bouche",tr:"ağız"}] },
+        { fr: "J'ai mal à la tête.", tr: "Başım ağrıyor.", words: [{fr:"mal",tr:"ağrı"},{fr:"tête",tr:"baş"}] },
+        { fr: "Mes mains sont propres.", tr: "Ellerim temiz.", words: [{fr:"mains",tr:"eller"},{fr:"propres",tr:"temiz"}] },
+        { fr: "Je cours avec mes jambes.", tr: "Bacaklarımla koşuyorum.", words: [{fr:"cours",tr:"koşuyorum"},{fr:"jambes",tr:"bacaklar"}] },
+        { fr: "Mon cœur bat vite.", tr: "Kalbim hızlı atıyor.", words: [{fr:"cœur",tr:"kalp"},{fr:"bat",tr:"atıyor"}] },
+        { fr: "Je suis en bonne santé.", tr: "Sağlığım iyi.", words: [{fr:"santé",tr:"sağlık"}] },
+        { fr: "Je fais du sport chaque jour.", tr: "Her gün spor yapıyorum.", words: [{fr:"sport",tr:"spor"},{fr:"chaque",tr:"her"}] }
+      ]
+    },
+    {
+      title: "Hava Durumu",
+      sentences: [
+        { fr: "Aujourd'hui il fait beau.", tr: "Bugün hava güzel.", words: [{fr:"Aujourd'hui",tr:"Bugün"},{fr:"beau",tr:"güzel"}] },
+        { fr: "Le soleil brille.", tr: "Güneş parlıyor.", words: [{fr:"brille",tr:"parlıyor"}] },
+        { fr: "Il fait chaud en été.", tr: "Yazın sıcak olur.", words: [{fr:"été",tr:"yaz"}] },
+        { fr: "En hiver, il fait froid.", tr: "Kışın soğuk olur.", words: [{fr:"hiver",tr:"kış"},{fr:"froid",tr:"soğuk"}] },
+        { fr: "Il pleut aujourd'hui.", tr: "Bugün yağmur yağıyor.", words: [{fr:"pleut",tr:"yağmur yağıyor"}] },
+        { fr: "J'aime la neige.", tr: "Karı seviyorum.", words: [{fr:"neige",tr:"kar"}] },
+        { fr: "Le vent est fort.", tr: "Rüzgar kuvvetli.", words: [{fr:"vent",tr:"rüzgar"}] },
+        { fr: "Je prends mon parapluie.", tr: "Şemsiyemi alıyorum.", words: [{fr:"parapluie",tr:"şemsiye"}] },
+        { fr: "Le printemps est beau.", tr: "İlkbahar güzel.", words: [{fr:"printemps",tr:"ilkbahar"}] },
+        { fr: "J'adore l'automne.", tr: "Sonbaharı çok seviyorum.", words: [{fr:"adore",tr:"çok seviyorum"},{fr:"automne",tr:"sonbahar"}] }
+      ]
+    },
+    {
+      title: "Alışveriş",
+      sentences: [
+        { fr: "Je vais au marché.", tr: "Pazara gidiyorum.", words: [{fr:"marché",tr:"pazar / çarşı"}] },
+        { fr: "J'achète des légumes.", tr: "Sebze satın alıyorum.", words: [{fr:"achète",tr:"satın alıyorum"},{fr:"légumes",tr:"sebzeler"}] },
+        { fr: "Les tomates sont rouges.", tr: "Domatesler kırmızı.", words: [{fr:"tomates",tr:"domatesler"}] },
+        { fr: "Combien coûte ce pain?", tr: "Bu ekmek ne kadar?", words: [{fr:"coûte",tr:"maliyeti"}] },
+        { fr: "C'est deux euros.", tr: "İki euro.", words: [{fr:"deux",tr:"iki"}] },
+        { fr: "Je paie avec ma carte.", tr: "Kartımla ödüyorum.", words: [{fr:"paie",tr:"ödüyorum"},{fr:"carte",tr:"kart"}] },
+        { fr: "Le sac est lourd.", tr: "Çanta ağır.", words: [{fr:"sac",tr:"çanta"},{fr:"lourd",tr:"ağır"}] },
+        { fr: "J'aime faire les courses.", tr: "Alışveriş yapmayı seviyorum.", words: [{fr:"courses",tr:"alışveriş"}] },
+        { fr: "Le magasin est ouvert.", tr: "Mağaza açık.", words: [{fr:"magasin",tr:"mağaza"},{fr:"ouvert",tr:"açık"}] },
+        { fr: "À demain!", tr: "Yarına kadar!", words: [{fr:"demain",tr:"yarın"}] }
+      ]
+    },
+    {
+      title: "Günlük Rutin",
+      sentences: [
+        { fr: "Je me réveille à six heures.", tr: "Altıda uyanıyorum.", words: [{fr:"réveille",tr:"uyanıyorum"},{fr:"six",tr:"altı"}] },
+        { fr: "Je me brosse les dents.", tr: "Dişlerimi fırçalıyorum.", words: [{fr:"brosse",tr:"fırçalıyorum"},{fr:"dents",tr:"dişler"}] },
+        { fr: "Je prends le petit-déjeuner.", tr: "Kahvaltı yapıyorum.", words: [{fr:"petit-déjeuner",tr:"kahvaltı"}] },
+        { fr: "Je vais au travail en métro.", tr: "İşe metroyla gidiyorum.", words: [{fr:"travail",tr:"iş"},{fr:"métro",tr:"metro"}] },
+        { fr: "Je travaille huit heures par jour.", tr: "Günde sekiz saat çalışıyorum.", words: [{fr:"travaille",tr:"çalışıyorum"},{fr:"huit",tr:"sekiz"}] },
+        { fr: "Je déjeune à midi.", tr: "Öğle yemeğini öğleyin yiyorum.", words: [{fr:"déjeune",tr:"öğle yemeği yiyorum"},{fr:"midi",tr:"öğlen"}] },
+        { fr: "Le soir, je me repose.", tr: "Akşam dinleniyorum.", words: [{fr:"repose",tr:"dinleniyorum"}] },
+        { fr: "Je lis avant de dormir.", tr: "Uyumadan önce okuyorum.", words: [{fr:"avant",tr:"önce"},{fr:"dormir",tr:"uyumak"}] },
+        { fr: "Je me couche à onze heures.", tr: "On birde yatıyorum.", words: [{fr:"onze",tr:"on bir"}] },
+        { fr: "C'est ma journée normale.", tr: "Bu benim normal günüm.", words: [{fr:"journée",tr:"gün (süre)"},{fr:"normale",tr:"normal"}] }
+      ]
+    }
+  ],
+  A2: [
+    {
+      title: "Şehirde Bir Gün",
+      sentences: [
+        { fr: "Hier, je suis allé en ville avec mon ami.", tr: "Dün arkadaşımla şehre gittim.", words: [{fr:"Hier",tr:"Dün"},{fr:"allé",tr:"gitti(m)"},{fr:"ville",tr:"şehir"},{fr:"ami",tr:"arkadaş"}] },
+        { fr: "Nous avons visité le musée d'art moderne.", tr: "Modern sanat müzesini ziyaret ettik.", words: [{fr:"visité",tr:"ziyaret ettik"},{fr:"musée",tr:"müze"},{fr:"moderne",tr:"modern"}] },
+        { fr: "Il y avait beaucoup de monde.", tr: "Çok kalabalıktı.", words: [{fr:"beaucoup",tr:"çok"},{fr:"monde",tr:"insan / dünya"}] },
+        { fr: "Nous avons mangé dans un restaurant italien.", tr: "İtalyan bir restoranda yedik.", words: [{fr:"restaurant",tr:"restoran"},{fr:"italien",tr:"İtalyan"}] },
+        { fr: "La nourriture était excellente.", tr: "Yemek mükemmeldi.", words: [{fr:"nourriture",tr:"yiyecek"},{fr:"excellente",tr:"mükemmel"}] },
+        { fr: "Après le déjeuner, nous avons marché dans le parc.", tr: "Öğle yemeğinden sonra parkta yürüdük.", words: [{fr:"Après",tr:"Sonra"},{fr:"marché",tr:"yürüdük"},{fr:"parc",tr:"park"}] },
+        { fr: "Le temps était agréable.", tr: "Hava güzeldi.", words: [{fr:"temps",tr:"hava / zaman"},{fr:"agréable",tr:"hoş / güzel"}] },
+        { fr: "J'ai acheté des souvenirs pour ma famille.", tr: "Ailem için hatıra eşyaları aldım.", words: [{fr:"acheté",tr:"satın aldım"},{fr:"souvenirs",tr:"hatıralar / hediyelikler"}] },
+        { fr: "Nous sommes rentrés à la maison le soir.", tr: "Akşam eve döndük.", words: [{fr:"rentrés",tr:"döndük"},{fr:"soir",tr:"akşam"}] },
+        { fr: "C'était une journée inoubliable.", tr: "Unutulmaz bir gündü.", words: [{fr:"inoubliable",tr:"unutulmaz"}] }
+      ]
+    },
+    {
+      title: "Restoran",
+      sentences: [
+        { fr: "Bonsoir, avez-vous une réservation?", tr: "İyi akşamlar, rezervasyonunuz var mı?", words: [{fr:"Bonsoir",tr:"İyi akşamlar"},{fr:"réservation",tr:"rezervasyon"}] },
+        { fr: "Oui, j'ai réservé une table pour deux.", tr: "Evet, iki kişilik masa rezervasyonu yaptım.", words: [{fr:"réservé",tr:"rezervasyon yaptım"},{fr:"table",tr:"masa"}] },
+        { fr: "Voici la carte, monsieur.", tr: "İşte menü, efendim.", words: [{fr:"Voici",tr:"İşte"},{fr:"carte",tr:"menü / kart"}] },
+        { fr: "Je voudrais la soupe à l'oignon.", tr: "Soğan çorbası istiyorum.", words: [{fr:"voudrais",tr:"istiyorum (kibarca)"},{fr:"soupe",tr:"çorba"},{fr:"oignon",tr:"soğan"}] },
+        { fr: "Et comme plat principal?", tr: "Ana yemek olarak?", words: [{fr:"plat",tr:"yemek / tabak"},{fr:"principal",tr:"ana / baş"}] },
+        { fr: "Je prends le bœuf bourguignon.", tr: "Bœuf bourguignon alıyorum.", words: [{fr:"bœuf",tr:"sığır eti"}] },
+        { fr: "Vous désirez du vin?", tr: "Şarap ister misiniz?", words: [{fr:"désirez",tr:"istersiniz"},{fr:"vin",tr:"şarap"}] },
+        { fr: "Oui, une bouteille de vin rouge, s'il vous plaît.", tr: "Evet, bir şişe kırmızı şarap lütfen.", words: [{fr:"bouteille",tr:"şişe"},{fr:"s'il vous plaît",tr:"lütfen"}] },
+        { fr: "L'addition, s'il vous plaît.", tr: "Hesap, lütfen.", words: [{fr:"addition",tr:"hesap"}] },
+        { fr: "Le service était parfait.", tr: "Servis mükemmeldi.", words: [{fr:"service",tr:"servis / hizmet"},{fr:"parfait",tr:"mükemmel"}] }
+      ]
+    }
+  ],
+  B1: [
+    {
+      title: "Paris'te Kaybolmak",
+      sentences: [
+        { fr: "Je me suis perdu dans les ruelles de Montmartre.", tr: "Montmartre'ın dar sokaklarında kayboldum.", words: [{fr:"perdu",tr:"kayboldum"},{fr:"ruelles",tr:"dar sokaklar"},{fr:"Montmartre",tr:"Montmartre (Paris semti)"}] },
+        { fr: "Les maisons colorées ressemblaient à un tableau impressionniste.", tr: "Renkli evler empresyonist bir tabloya benziyordu.", words: [{fr:"colorées",tr:"renkli"},{fr:"ressemblaient",tr:"benziyordu"},{fr:"tableau",tr:"tablo / resim"}] },
+        { fr: "J'ai demandé mon chemin à une vieille dame.", tr: "Yaşlı bir kadına yolu sordum.", words: [{fr:"chemin",tr:"yol"},{fr:"vieille",tr:"yaşlı (kadın)"}] },
+        { fr: "Elle m'a expliqué avec beaucoup de patience.", tr: "Bana çok sabırla açıkladı.", words: [{fr:"expliqué",tr:"açıkladı"},{fr:"patience",tr:"sabır"}] },
+        { fr: "Finalement, j'ai trouvé la Place du Tertre.", tr: "Sonunda Place du Tertre'yi buldum.", words: [{fr:"Finalement",tr:"Sonunda"},{fr:"trouvé",tr:"buldum"}] },
+        { fr: "Des artistes peignaient des portraits des touristes.", tr: "Sanatçılar turistlerin portrelerini çiziyordu.", words: [{fr:"artistes",tr:"sanatçılar"},{fr:"peignaient",tr:"çiziyorlardı"},{fr:"touristes",tr:"turistler"}] },
+        { fr: "Je me suis assis dans un café pour me reposer.", tr: "Dinlenmek için bir kafede oturdum.", words: [{fr:"assis",tr:"oturdum"},{fr:"reposer",tr:"dinlenmek"}] },
+        { fr: "En buvant mon café, j'ai observé la vie parisienne.", tr: "Kahvemi içerken Paris yaşamını gözlemledim.", words: [{fr:"buvant",tr:"içerken"},{fr:"observé",tr:"gözlemledim"},{fr:"parisienne",tr:"Parisli"}] },
+        { fr: "Cette ville ne cesse jamais de me surprendre.", tr: "Bu şehir beni şaşırtmaktan hiç vazgeçmiyor.", words: [{fr:"cesse",tr:"vazgeçiyor"},{fr:"surprendre",tr:"şaşırtmak"}] },
+        { fr: "Je reviendrai sûrement l'année prochaine.", tr: "Gelecek yıl kesinlikle geri döneceğim.", words: [{fr:"reviendrai",tr:"döneceğim"},{fr:"sûrement",tr:"kesinlikle"},{fr:"prochaine",tr:"gelecek"}] }
+      ]
+    }
+  ],
+  B2: [
+    {
+      title: "Felsefe Tartışması",
+      sentences: [
+        { fr: "La question de la liberté a toujours fasciné les philosophes.", tr: "Özgürlük sorusu her zaman filozofları büyülemiştir.", words: [{fr:"liberté",tr:"özgürlük"},{fr:"fasciné",tr:"büyülemiş"},{fr:"philosophes",tr:"filozoflar"}] },
+        { fr: "Sartre affirmait que l'existence précède l'essence.", tr: "Sartre, varoluşun özden önce geldiğini savunuyordu.", words: [{fr:"affirmait",tr:"savunuyordu"},{fr:"existence",tr:"varoluş"},{fr:"précède",tr:"önce gelir"},{fr:"essence",tr:"öz"}] },
+        { fr: "Cette idée bouleverse nos conceptions traditionnelles de l'identité.", tr: "Bu fikir kimliğe dair geleneksel kavrayışlarımızı alt üst ediyor.", words: [{fr:"bouleverse",tr:"alt üst ediyor"},{fr:"conceptions",tr:"kavrayışlar"},{fr:"identité",tr:"kimlik"}] },
+        { fr: "Si nous sommes libres, nous sommes également responsables.", tr: "Eğer özgürsek, aynı zamanda sorumluyuz.", words: [{fr:"libres",tr:"özgür"},{fr:"responsables",tr:"sorumlu"}] },
+        { fr: "Cette responsabilité peut être perçue comme un fardeau.", tr: "Bu sorumluluk bir yük olarak algılanabilir.", words: [{fr:"perçue",tr:"algılanan"},{fr:"fardeau",tr:"yük"}] },
+        { fr: "Cependant, elle est aussi source d'épanouissement personnel.", tr: "Ancak aynı zamanda kişisel gelişimin kaynağıdır.", words: [{fr:"Cependant",tr:"Ancak"},{fr:"épanouissement",tr:"gelişme / açılım"}] },
+        { fr: "Le débat entre déterminisme et libre arbitre reste ouvert.", tr: "Determinizm ve özgür irade arasındaki tartışma açık kalmaktadır.", words: [{fr:"déterminisme",tr:"determinizm"},{fr:"libre arbitre",tr:"özgür irade"}] },
+        { fr: "Les neurosciences remettent en question notre notion d'agency.", tr: "Nörobilim, eyleyicilik anlayışımızı sorguluyor.", words: [{fr:"neurosciences",tr:"nörobilim"},{fr:"remettent en question",tr:"sorguluyor"}] },
+        { fr: "Pourtant, l'expérience subjective de la décision demeure réelle.", tr: "Yine de karar vermenin öznel deneyimi gerçek olmaya devam ediyor.", words: [{fr:"Pourtant",tr:"Yine de"},{fr:"subjective",tr:"öznel"},{fr:"demeure",tr:"kalmaya devam eder"}] },
+        { fr: "La philosophie nous invite à vivre avec ces paradoxes.", tr: "Felsefe bizi bu paradokslarla yaşamaya davet ediyor.", words: [{fr:"invite",tr:"davet ediyor"},{fr:"paradoxes",tr:"paradokslar"}] }
+      ]
+    }
+  ],
+  C1: [
+    {
+      title: "Varoluşçuluk ve Sartre",
+      sentences: [
+        { fr: "L'existentialisme sartrien repose sur une prémisse radicale.", tr: "Sartrecu varoluşçuluk radikal bir öncüle dayanır.", words: [{fr:"existentialisme",tr:"varoluşçuluk"},{fr:"repose",tr:"dayanır"},{fr:"prémisse",tr:"öncül"}] },
+        { fr: "L'homme est condamné à être libre, qu'il le veuille ou non.", tr: "İnsan, ister istemez özgür olmaya mahkumdur.", words: [{fr:"condamné",tr:"mahkum"},{fr:"veuille",tr:"istesin"}] },
+        { fr: "Cette liberté radicale engendre une angoisse existentielle profonde.", tr: "Bu radikal özgürlük derin bir varoluşsal kaygı doğurur.", words: [{fr:"engendre",tr:"doğurur"},{fr:"angoisse",tr:"kaygı / sıkıntı"},{fr:"profonde",tr:"derin"}] },
+        { fr: "La mauvaise foi consiste à fuir cette responsabilité.", tr: "Kötü niyet, bu sorumluluktan kaçmaktan ibarettir.", words: [{fr:"mauvaise foi",tr:"kötü niyet / inkar"},{fr:"fuir",tr:"kaçmak"}] },
+        { fr: "Sartre s'oppose ainsi aux essentialistes qui postulent une nature humaine fixe.", tr: "Sartre böylece sabit bir insan doğası varsayan özcülere karşı çıkar.", words: [{fr:"s'oppose",tr:"karşı çıkar"},{fr:"postulent",tr:"varsayarlar"},{fr:"fixe",tr:"sabit"}] },
+        { fr: "L'authenticité devient alors l'impératif moral suprême.", tr: "Özgünlük böylece en yüce ahlaki buyruk haline gelir.", words: [{fr:"authenticité",tr:"özgünlük"},{fr:"impératif",tr:"buyruk / zorunluluk"},{fr:"suprême",tr:"en yüce"}] },
+        { fr: "Être authentique signifie assumer pleinement ses choix.", tr: "Özgün olmak, seçimlerini tamamen üstlenmek anlamına gelir.", words: [{fr:"assumer",tr:"üstlenmek"},{fr:"pleinement",tr:"tamamen"}] },
+        { fr: "Cette pensée a profondément influencé la littérature du XXe siècle.", tr: "Bu düşünce 20. yüzyıl edebiyatını derinden etkiledi.", words: [{fr:"influencé",tr:"etkiledi"},{fr:"siècle",tr:"yüzyıl"}] },
+        { fr: "Des auteurs comme Camus ont développé des variantes distinctes.", tr: "Camus gibi yazarlar farklı varyantlar geliştirdi.", words: [{fr:"auteurs",tr:"yazarlar"},{fr:"développé",tr:"geliştirdi"},{fr:"distinctes",tr:"farklı / belirgin"}] },
+        { fr: "L'héritage de Sartre demeure incontournable dans la philosophie contemporaine.", tr: "Sartre'ın mirası çağdaş felsefede vazgeçilmez olmaya devam etmektedir.", words: [{fr:"héritage",tr:"miras"},{fr:"incontournable",tr:"vazgeçilmez"},{fr:"contemporaine",tr:"çağdaş"}] }
+      ]
+    }
+  ],
+  C2: [
+    {
+      title: "Baudelaire'in Mirası",
+      sentences: [
+        { fr: "Les Fleurs du Mal ont inauguré une rupture irréversible avec la poésie romantique.", tr: "Kötülük Çiçekleri romantik şiirle telafi edilemez bir kopuşu başlattı.", words: [{fr:"inauguré",tr:"başlattı"},{fr:"rupture",tr:"kopuş"},{fr:"irréversible",tr:"telafi edilemez"}] },
+        { fr: "Baudelaire transmuait la laideur urbaine en beauté poétique d'une rare intensité.", tr: "Baudelaire, kentsel çirkinliği nadir bir yoğunlukta şiirsel güzelliğe dönüştürüyordu.", words: [{fr:"transmuait",tr:"dönüştürüyordu"},{fr:"laideur",tr:"çirkinlik"},{fr:"intensité",tr:"yoğunluk"}] },
+        { fr: "La modernité baudelairienne réside dans cette dialectique entre idéal et spleen.", tr: "Baudelaireci modernlik, ideal ile sıkıntı arasındaki bu diyalektikte yatar.", words: [{fr:"réside",tr:"yatar / bulunur"},{fr:"dialectique",tr:"diyalektik"},{fr:"spleen",tr:"melankoli / sıkıntı"}] },
+        { fr: "Le poète maudit se retrouve condamné à une lucidité insupportable.", tr: "Lanetli şair, dayanılmaz bir berraklığa mahkum bulur kendini.", words: [{fr:"maudit",tr:"lanetli"},{fr:"lucidité",tr:"berraklık / uyanıklık"},{fr:"insupportable",tr:"dayanılmaz"}] },
+        { fr: "Cette clairvoyance l'exclut irrémédiablement de la société bourgeoise.", tr: "Bu öngörü onu burjuva toplumundan telafi edilemez biçimde dışlar.", words: [{fr:"clairvoyance",tr:"öngörü / feraset"},{fr:"irrémédiablement",tr:"çaresizce"}] },
+        { fr: "Pourtant, c'est précisément cette marginalité qui fonde son autorité poétique.", tr: "Oysa şiirsel otoritesini kuran tam da bu marjinalliktir.", words: [{fr:"marginalité",tr:"marjinallik"},{fr:"fonde",tr:"kurar / temeller"}] },
+        { fr: "L'influence de Baudelaire sur Rimbaud, Verlaine et Mallarmé fut déterminante.", tr: "Baudelaire'in Rimbaud, Verlaine ve Mallarmé üzerindeki etkisi belirleyici oldu.", words: [{fr:"déterminante",tr:"belirleyici"}] },
+        { fr: "Il a ouvert la voie à une conception radicalement nouvelle du langage poétique.", tr: "Şiir dilinin köklü biçimde yeni bir anlayışının önünü açtı.", words: [{fr:"ouvert la voie",tr:"yolu açtı"},{fr:"radicalement",tr:"köklü biçimde"}] },
+        { fr: "Sa quête de la beauté dans le transitoire préfigure la sensibilité moderne.", tr: "Geçicideki güzellik arayışı, modern duyarlılığı önceden şekillendirir.", words: [{fr:"quête",tr:"arayış"},{fr:"transitoire",tr:"geçici"},{fr:"préfigure",tr:"önceden şekillendirir"}] },
+        { fr: "Baudelaire demeure le poète des contradictions irrésolues de la modernité.", tr: "Baudelaire, modernliğin çözümsüz çelişkilerinin şairi olmaya devam etmektedir.", words: [{fr:"contradictions",tr:"çelişkiler"},{fr:"irrésolues",tr:"çözümsüz"}] }
+      ]
+    }
+  ]
+};
+
+// Fill missing levels with placeholder
+['A2','B1','B2','C1','C2'].forEach(level => {
+  if (!STORIES[level]) STORIES[level] = [];
+  const topics = {
+    A2:['Şehirde Bir Gün','Restoran','Seyahat Planı','Hobiler','Tatil Anıları','İş Hayatı','Spor ve Sağlık','Arkadaşlık','Teknoloji','Gelecek Hayaller'],
+    B1:['Paris\'te Kaybolmak','Fransız Sineması','Çevre Sorunları','Siyaset Tartışması','Gastronomi','Sanat Müzesi','Göç Hikayeleri','Medya ve Haberler','Kariyer Değişimi','Kültürel Farklılıklar'],
+    B2:['Felsefe Tartışması','Ekonomik Kriz','Edebi Analiz','Bilim ve Etik','Sosyal Medya Etkisi','Tarihsel Dönüm Noktaları','Feminist Hareket','Küreselleşme','Yapay Zeka','Kimlik ve Aidiyet'],
+    C1:['Varoluşçuluk ve Sartre','Post-kolonyal Edebiyat','Nörobilim','Hukuki Etik','Mimari Felsefesi','Dilbilim Teorisi','Eko-feminizm','Siyaset Felsefesi','Çağdaş Sanat','Psikanaliz'],
+    C2:['Baudelaire\'in Mirası','Derrida ve Yapısöküm','Proust\'un Zamanı','Fransız Devrimi','Postmodern Roman','Lacanian Psikanaliz','Fransız Yeni Dalgası','Levi-Strauss','Simone de Beauvoir','Roland Barthes']
+  };
+  while (STORIES[level].length < 10) {
+    const i = STORIES[level].length;
+    STORIES[level].push({
+      title: topics[level][i] || `Bölüm ${i+1}`,
+      sentences: [
+        { fr: "Ce chapitre sera disponible prochainement.", tr: "Bu bölüm yakında eklenecektir.", words: [{fr:"prochainement",tr:"yakında"}] },
+        { fr: "Revenez bientôt pour découvrir de nouvelles histoires.", tr: "Yeni hikayeler için yakında geri gelin.", words: [{fr:"Revenez",tr:"Geri gelin"},{fr:"découvrir",tr:"keşfetmek"}] }
+      ]
+    });
+  }
+});
+
+// ========== STATE ==========
+let currentLevel = 'A1';
+let currentChapter = 0;
+let savedCards = JSON.parse(localStorage.getItem('fc_cards') || '[]');
+let currentPopup = null;
+let todayKey = new Date().toDateString();
+let todayCount = parseInt(localStorage.getItem('fc_today_' + todayKey) || '0');
+
+const LEVEL_COLORS = { A1:'#4CAF50', A2:'#8BC34A', B1:'#FFC107', B2:'#FF9800', C1:'#F44336', C2:'#9C27B0' };
+
+// ========== NAVIGATION ==========
+function showTab(tab, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (tab === 'learn') {
+    showScreen('levels');
+    updateProgress();
+  } else {
+    showScreen('cards');
+    renderCards();
+  }
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => { s.style.display='none'; s.classList.remove('active'); });
+  const s = document.getElementById('screen-' + id);
+  s.style.display = 'block';
+  s.classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function selectLevel(level) {
+  currentLevel = level;
+  document.getElementById('chapters-title').textContent = level + ' — Bölümler';
+  const stories = STORIES[level];
+  document.getElementById('chapters-list').innerHTML = stories.map((s, i) => `
+    <div class="chapter-card" onclick="openStory(${i})">
+      <div class="chapter-num">${i+1}</div>
+      <div class="chapter-info">
+        <div class="chapter-title">${s.title}</div>
+        <div class="chapter-meta">Bölüm ${i+1} · ${s.sentences.length} cümle</div>
+      </div>
+      <div class="chapter-arrow">›</div>
+    </div>`).join('');
+  showScreen('chapters');
+}
+
+function openStory(idx) {
+  currentChapter = idx;
+  const story = STORIES[currentLevel][idx];
+  const tag = document.getElementById('story-level-tag');
+  tag.textContent = currentLevel;
+  tag.style.cssText = `background:${LEVEL_COLORS[currentLevel]}22;color:${LEVEL_COLORS[currentLevel]};border:1px solid ${LEVEL_COLORS[currentLevel]}44;`;
+  document.getElementById('story-title').textContent = story.title;
+  renderStory(story);
+  showScreen('story');
+}
+
+// ========== STORY RENDER ==========
+function renderStory(story) {
+  const html = story.sentences.map((sentence, si) => {
+    const wordMap = {};
+    (sentence.words || []).forEach(w => { wordMap[w.fr.toLowerCase()] = w.tr; });
+    const tokens = sentence.fr.split(/(\s+)/);
+    const wordHtml = tokens.map(token => {
+      const clean = token.trim().toLowerCase().replace(/[.,!?;:«»"'()—…]/g, '');
+      if (clean && wordMap[clean]) {
+        return `<span class="story-word" data-fr="${esc(token.trim())}" data-tr="${esc(wordMap[clean])}" onclick="showWord(this)">${esc(token)}</span>`;
+      }
+      return esc(token);
+    }).join('');
+    return `<span class="story-sentence" data-fr="${esc(sentence.fr)}" data-tr="${esc(sentence.tr)}" onclick="showSentence(event,this)">${wordHtml}</span> `;
+  }).join('');
+  document.getElementById('story-text').innerHTML = html;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ========== POPUP ==========
+function showWord(el) {
+  clearActive();
+  el.classList.add('active');
+  currentPopup = { fr: el.dataset.fr, tr: el.dataset.tr, type: 'word' };
+  openPopup('KELİME', el.dataset.fr, el.dataset.tr);
+}
+
+function showSentence(e, el) {
+  if (e.target.classList.contains('story-word')) return;
+  clearActive();
+  el.classList.add('active');
+  currentPopup = { fr: el.dataset.fr, tr: el.dataset.tr, type: 'sentence' };
+  openPopup('CÜMLE', el.dataset.fr, el.dataset.tr);
+}
+
+function openPopup(type, fr, tr) {
+  document.getElementById('popup-type').textContent = type;
+  document.getElementById('popup-original').textContent = fr;
+  document.getElementById('popup-translation').textContent = tr;
+  const exists = savedCards.some(c => c.fr === fr);
+  const btn = document.getElementById('popup-save-btn');
+  btn.textContent = exists ? '✓ Zaten Kaydedildi' : '+ Karta Ekle';
+  btn.className = 'popup-save-btn' + (exists ? ' saved' : '');
+  document.getElementById('popup').classList.add('visible');
+}
+
+function closePopup() {
+  document.getElementById('popup').classList.remove('visible');
+  clearActive();
+  currentPopup = null;
+}
+
+function clearActive() {
+  document.querySelectorAll('.active').forEach(e => { if (e !== document.getElementById('popup')) e.classList.remove('active'); });
+}
+
+function saveWord() {
+  if (!currentPopup) return;
+  if (savedCards.some(c => c.fr === currentPopup.fr)) return;
+  savedCards.unshift({ ...currentPopup, level: currentLevel, chapter: currentChapter + 1, date: new Date().toISOString() });
+  localStorage.setItem('fc_cards', JSON.stringify(savedCards));
+  todayCount++;
+  localStorage.setItem('fc_today_' + todayKey, todayCount);
+  const btn = document.getElementById('popup-save-btn');
+  btn.textContent = '✓ Kaydedildi!';
+  btn.className = 'popup-save-btn saved';
+  updateProgress();
+}
+
+// ========== CARDS ==========
+function renderCards() {
+  document.getElementById('total-cards').textContent = savedCards.length;
+  document.getElementById('today-cards').textContent = todayCount;
+  if (!savedCards.length) {
+    document.getElementById('cards-content').innerHTML = `<div class="cards-empty"><div class="cards-empty-icon">📚</div><h3>Henüz kart yok</h3><p>Hikaye okurken kelimelere dokun<br>ve "+ Karta Ekle" butonuna bas.</p></div>`;
+    return;
+  }
+  document.getElementById('cards-content').innerHTML = `<div class="cards-grid">${savedCards.map((c,i)=>`
+    <div class="vocab-card">
+      <div style="flex:1"><div class="vocab-fr">${esc(c.fr)}</div><div class="vocab-tr">${esc(c.tr)}</div></div>
+      <div class="vocab-level-tag">${c.level} · B${c.chapter}</div>
+      <button class="vocab-delete" onclick="deleteCard(${i})">✕</button>
+    </div>`).join('')}</div>`;
+}
+
+function deleteCard(i) {
+  savedCards.splice(i, 1);
+  localStorage.setItem('fc_cards', JSON.stringify(savedCards));
+  renderCards();
+  updateProgress();
+}
+
+function updateProgress() {
+  ['A1','A2','B1','B2','C1','C2'].forEach(l => {
+    const n = savedCards.filter(c => c.level === l).length;
+    const el = document.getElementById('prog-' + l);
+    if (el) el.style.width = Math.min(n * 4, 100) + '%';
+  });
+}
+
+updateProgress();
+
+document.addEventListener('click', e => {
+  const popup = document.getElementById('popup');
+  if (popup.classList.contains('visible') && !popup.contains(e.target) && !e.target.classList.contains('story-word') && !e.target.classList.contains('story-sentence')) closePopup();
+});
+</script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js")}</script>
+</body>
+</html>
